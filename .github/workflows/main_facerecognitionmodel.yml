@@ -6,6 +6,10 @@ on:
       - main
   workflow_dispatch:
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -107,4 +111,5 @@ jobs:
           app-name: 'FaceRecognitionModel'
           slot-name: 'Production'
           package: .
+
 
