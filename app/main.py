@@ -1,7 +1,7 @@
 from fastapi import FastAPI, UploadFile, File
 from typing import List
 from pydantic import BaseModel
-from .face_rec import get_face_encodings, identify_face
+from .face_rec import get_face_encodings, identify_face, known_names
 from fastapi.middleware.cors import CORSMiddleware
 import io
 
@@ -10,6 +10,9 @@ class FaceRecognitionResponse(BaseModel):
     face_count: int
     encodings: List[List[float]]
     identities: List[str]
+
+class KnownNamesResponse(BaseModel):
+    names: List[str]
 
 # ----------------- FastAPI App -----------------
 app = FastAPI(title="Face Recognition API")
@@ -39,3 +42,12 @@ async def recognize_face(file: UploadFile = File(...)):
         "encodings": encodings_list,
         "identities": identities
     }
+
+
+# ----------------- 回傳所有已知人名 -----------------
+@app.get("/known-names", response_model=KnownNamesResponse)
+async def get_known_names():
+    """
+    回傳目前已知的所有人名
+    """
+    return {"names": known_names}
