@@ -6,11 +6,11 @@
 
 FaceRecognitionAPI/
 ├─ app/
-│ ├─ main.py # FastAPI 主程式，負責 API 路由
-│ ├─ face_rec.py # 人臉辨識核心程式，負責產生人臉向量
-│ ├─ known_faces.py    # 已知人臉初始化程式
-│ └─ init.py # 空檔案，用來讓 Python 將 app 當成套件(package)
-├─ requirements.txt # 套件清單
+│  ├─ main.py          # FastAPI 主程式，負責 API 路由
+│  ├─ face_rec.py      # 人臉辨識核心程式，負責產生人臉向量
+│  ├─ known_faces.py   # 已知人臉初始化程式
+│  └─ __init__.py      # 空檔案，用來讓 Python 將 app 當成套件(package)
+├─ requirements.txt    # 套件清單
 ├─ .gitignore
 └─ README.md
 
