@@ -1,8 +1,4 @@
-# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
-# More GitHub Actions for Azure: https://github.com/Azure/actions
-# More info on Python, GitHub Actions, and Azure App Service: https://aka.ms/python-webapps-actions
-
-name: Build and deploy Python app to Azure Web App - FaceRecognitionModel
+name: Build and deploy Python app - FaceRecognitionModel
 
 on:
   push:
@@ -13,28 +9,58 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read #This is required for actions/checkout
-
+    outputs:
+      wheels-path: ${{ steps.upload-wheels.outputs.path }}
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python version
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            cmake \
+            g++ \
+            libopenblas-dev \
+            liblapack-dev \
+            libboost-all-dev \
+            python3-dev \
+            python3-pip \
+            python3-venv
+
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - name: Create and start virtual environment
+      - name: Create virtual environment
         run: |
           python -m venv venv
           source venv/bin/activate
-      
-      - name: Install dependencies
-        run: pip install -r requirements.txt
-        
-      # Optional: Add step to run tests here (PyTest, Django test suites, etc.)
 
-      - name: Upload artifact for deployment jobs
+      - name: Install build tools
+        run: |
+          source venv/bin/activate
+          pip install --upgrade pip setuptools wheel
+
+      - name: Build dlib & face_recognition wheels
+        run: |
+          source venv/bin/activate
+          mkdir wheels
+          pip wheel dlib==20.0.0 face_recognition==1.3.0 -w wheels
+
+      - name: Install other dependencies
+        run: |
+          source venv/bin/activate
+          pip install --no-index --find-links=wheels -r requirements.txt
+
+      - name: Upload wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-wheels
+          path: wheels/
+
+      - name: Upload app source
         uses: actions/upload-artifact@v4
         with:
           name: python-app
@@ -45,16 +71,29 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: build
-    permissions:
-      id-token: write #This is required for requesting the JWT
-      contents: read #This is required for actions/checkout
-
     steps:
-      - name: Download artifact from build job
+      - name: Download app source
         uses: actions/download-artifact@v4
         with:
           name: python-app
-      
+          path: .
+
+      - name: Download wheels
+        uses: actions/download-artifact@v4
+        with:
+          name: python-wheels
+          path: wheels/
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies from wheels
+        run: |
+          pip install --upgrade pip
+          pip install --no-index --find-links=wheels -r requirements.txt
+
       - name: Login to Azure
         uses: azure/login@v2
         with:
@@ -62,10 +101,9 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_7BA43BB2AF364AEB89D5D517A2D9E03D }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_696B238220A24479BEACBB539858D6B6 }}
 
-      - name: 'Deploy to Azure Web App'
+      - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
-        id: deploy-to-webapp
         with:
           app-name: 'FaceRecognitionModel'
           slot-name: 'Production'
-          
+          package: .
