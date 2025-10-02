@@ -52,7 +52,7 @@ jobs:
       - name: Install other dependencies
         run: |
           source venv/bin/activate
-          pip install --no-index --find-links=wheels -r requirements.txt
+          pip install --find-links=wheels -r requirements.txt
 
       - name: Upload wheels
         uses: actions/upload-artifact@v4
@@ -92,7 +92,7 @@ jobs:
       - name: Install dependencies from wheels
         run: |
           pip install --upgrade pip
-          pip install --no-index --find-links=wheels -r requirements.txt
+          pip install --find-links=wheels -r requirements.txt
 
       - name: Login to Azure
         uses: azure/login@v2
@@ -107,3 +107,4 @@ jobs:
           app-name: 'FaceRecognitionModel'
           slot-name: 'Production'
           package: .
+
