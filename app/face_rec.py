@@ -2,24 +2,39 @@ import os
 import numpy as np
 import face_recognition
 import io
+import shutil
 from typing import List
 
-# ----------------- 載入已知人臉 -----------------
-known_encodings = []
-known_names = []
+DATA_DIR = os.path.join(os.path.dirname(__file__), "../data")
+KNOWN_DIR = os.path.join(os.path.dirname(__file__), "../known_faces")
 
-known_faces_dir = os.path.join(os.path.dirname(__file__), "../known_faces")
+# ----------------- 初始化已知人臉 -----------------
+if os.path.exists(KNOWN_DIR):
+    known_encodings = []
+    known_names = []
 
-for filename in os.listdir(known_faces_dir):
-    name, ext = os.path.splitext(filename)
-    image_path = os.path.join(known_faces_dir, filename)
-    image = face_recognition.load_image_file(image_path)
-    encodings = face_recognition.face_encodings(image)
-    if encodings:  # 確認圖片有臉
-        known_encodings.append(encodings[0])
-        known_names.append(name)
+    for filename in os.listdir(KNOWN_DIR):
+        name, ext = os.path.splitext(filename)
+        image_path = os.path.join(KNOWN_DIR, filename)
+        image = face_recognition.load_image_file(image_path)
+        encodings = face_recognition.face_encodings(image)
+        if encodings:
+            known_encodings.append(encodings[0])
+            known_names.append(name)
 
-print(f"Loaded {len(known_encodings)} known faces: {known_names}")
+    os.makedirs(DATA_DIR, exist_ok=True)
+    np.save(os.path.join(DATA_DIR, "known_encodings.npy"), known_encodings)
+    np.save(os.path.join(DATA_DIR, "known_names.npy"), known_names)
+
+    # 刪除 known_faces 資料夾
+    shutil.rmtree(KNOWN_DIR)
+    print(f"Processed {len(known_encodings)} faces, known_faces folder removed.")
+
+else:
+    # 從向量檔載入
+    known_encodings = np.load(os.path.join(DATA_DIR, "known_encodings.npy"), allow_pickle=True)
+    known_names = np.load(os.path.join(DATA_DIR, "known_names.npy"), allow_pickle=True)
+    print(f"Loaded {len(known_encodings)} faces from data/")
 
 # ----------------- 功能函式 -----------------
 def get_face_encodings(image_bytes: bytes) -> List[np.ndarray]:
