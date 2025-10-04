@@ -117,3 +117,7 @@ jobs:
           package: .
           startup-command: './startup.sh'
 
+      - name: Debug check files
+        run: ls -R .
+
+
