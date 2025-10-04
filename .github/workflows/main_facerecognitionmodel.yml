@@ -106,11 +106,40 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_7BA43BB2AF364AEB89D5D517A2D9E03D }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_696B238220A24479BEACBB539858D6B6 }}
 
+      - name: Make startup.sh executable
+        run: chmod +x startup.sh
+
+      - name: Extract output files before deploy
+        run: |
+          echo "🔹 解壓縮 output.tar.gz ..."
+          tar -xzf output.tar.gz
+
+          echo "🔹 檢查 startup.sh ..."
+          if [ ! -f startup.sh ]; then
+            echo "沒有找到 startup.sh！"
+            exit 1
+          fi
+
+          echo "🔹 確保 startup.sh 可執行"
+          chmod +x startup.sh
+
+          echo "🔹 修改 startup.sh 以啟動虛擬環境"
+          # 將 source antenv/bin/activate 插入到開頭（若沒有的話）
+          if ! grep -q "source antenv/bin/activate" startup.sh; then
+            sed -i '1a source antenv/bin/activate' startup.sh
+          fi
+
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'FaceRecognitionModel'
           slot-name: 'Production'
           package: .
+          startup-command: "bash /home/site/wwwroot/startup.sh"
+
+      - name: Debug check files
+        run: ls -R .
+
+
 
 
