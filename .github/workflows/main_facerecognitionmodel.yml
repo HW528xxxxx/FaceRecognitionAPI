@@ -112,5 +112,4 @@ jobs:
           app-name: 'FaceRecognitionModel'
           slot-name: 'Production'
           package: .
-
-
+          startup-command: './startup.sh'
