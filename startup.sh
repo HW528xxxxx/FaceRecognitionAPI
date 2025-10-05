@@ -1,12 +1,19 @@
 #!/bin/bash
 LOG_FILE="/home/LogFiles/startup.log"
 
-echo "===== [STARTUP] 啟動 FaceRecognitionModel =====" | tee -a $LOG_FILE
+echo "===== [STARTUP] FaceRecognitionModel 啟動 =====" | tee -a $LOG_FILE
+cd /home/site/wwwroot
 
-# 檢查虛擬環境是否存在
+# 如果 antenv 不存在但 antenv.tar.gz 有，先解壓
 if [ ! -d "/home/site/wwwroot/antenv/bin" ]; then
-  echo "❌ 找不到 antenv 環境，啟動失敗！" | tee -a $LOG_FILE
-  exit 1
+  echo "🔹 解壓 antenv.tar.gz ..." | tee -a $LOG_FILE
+  if [ -f "/home/site/wwwroot/antenv.tar.gz" ]; then
+    tar -xzf /home/site/wwwroot/antenv.tar.gz
+    echo "✅ antenv 解壓完成" | tee -a $LOG_FILE
+  else
+    echo "❌ 找不到 antenv.tar.gz，無法啟動" | tee -a $LOG_FILE
+    exit 1
+  fi
 fi
 
 # 啟動虛擬環境

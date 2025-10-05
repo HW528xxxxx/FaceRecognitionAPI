@@ -29,17 +29,25 @@ jobs:
           pip install --upgrade pip setuptools wheel
           pip install --no-cache-dir -r requirements-cpp.txt
           pip install --no-cache-dir -r requirements.txt
+          echo "✅ antenv 建立完成"
 
-      - name: Package all files (with antenv)
+      - name: Compress antenv separately
+        run: |
+          echo "🔹 壓縮 antenv.tar.gz ..."
+          tar -czf antenv.tar.gz antenv
+          ls -lh antenv.tar.gz
+
+      - name: Package app files
         run: |
           echo "🔹 打包 output.tar.gz ..."
           tar -czf output.tar.gz \
             app/ \
             data/ \
-            antenv/ \
             startup.sh \
             requirements.txt \
-            requirements-cpp.txt
+            requirements-cpp.txt \
+            antenv.tar.gz
+          ls -lh output.tar.gz
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
