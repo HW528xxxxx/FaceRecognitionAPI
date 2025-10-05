@@ -159,7 +159,8 @@ jobs:
           app-name: 'FaceRecognitionModel'
           slot-name: 'Production'
           package: extracted
-          startup-command: "bash /home/site/wwwroot/startup.sh"
+          startup-command: "bash /home/site/wwwroot/extracted/startup.sh"
 
       - name: Debug check files
         run: ls -R extracted
+
