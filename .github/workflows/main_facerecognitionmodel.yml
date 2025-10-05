@@ -126,6 +126,17 @@ jobs:
           echo "🔹 解壓 output.tar.gz ..."
           tar -xzf output.tar.gz
 
+          echo "🔹 解壓 python-wheels.zip (若存在) ..."
+          cd wheels_zip
+          if ls *.zip >/dev/null 2>&1; then
+            unzip -o *.zip -d ../wheels
+          else
+            mv ../wheels_zip ../wheels
+          fi
+          cd ..
+          echo "✅ wheels 內容如下："
+          ls -la wheels
+
           echo "🔹 檢查 startup.sh ..."
           ls -la
           if [ ! -f startup.sh ]; then
@@ -157,3 +168,4 @@ jobs:
 
       - name: Debug check files
         run: ls -R .
+
