@@ -82,7 +82,7 @@ jobs:
           name: python-app
           path: output.tar.gz
 
-  deploy:
+    deploy:
     runs-on: ubuntu-latest
     needs: build
     steps:
@@ -103,6 +103,20 @@ jobs:
         with:
           python-version: '3.11'
 
+      # ✅ 先解壓 output.tar.gz，再安裝依賴
+      - name: Extract output files
+        run: |
+          echo "🔹 解壓縮 output.tar.gz ..."
+          tar -xzf output.tar.gz
+          echo "🔹 列出檔案確認 ..."
+          ls -la
+          echo "🔹 檢查 startup.sh ..."
+          if [ ! -f startup.sh ]; then
+            echo "❌ 沒有找到 startup.sh！"
+            exit 1
+          fi
+          chmod +x startup.sh
+
       - name: Install dependencies from wheels
         run: |
           pip install --upgrade pip
@@ -115,23 +129,6 @@ jobs:
           client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_844EBF23D10F47F8A42E54F966D7658B }}
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_7BA43BB2AF364AEB89D5D517A2D9E03D }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_696B238220A24479BEACBB539858D6B6 }}
-
-      # 🔹 解壓縮 output.tar.gz 並確認 startup.sh
-      - name: Extract output files before deploy
-        run: |
-          echo "🔹 解壓縮 output.tar.gz ..."
-          tar -xzf output.tar.gz
-          echo "🔹 檢查 startup.sh ..."
-          if [ ! -f startup.sh ]; then
-            echo "❌ 沒有找到 startup.sh！"
-            exit 1
-          fi
-          echo "🔹 確保 startup.sh 可執行"
-          chmod +x startup.sh
-          echo "🔹 若未啟動虛擬環境則自動插入"
-          if ! grep -q "source antenv/bin/activate" startup.sh; then
-            sed -i '1a source antenv/bin/activate' startup.sh
-          fi
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
