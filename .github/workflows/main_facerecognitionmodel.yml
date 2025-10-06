@@ -51,42 +51,30 @@ jobs:
           source venv/bin/activate
           pip install --find-links=wheels -r requirements.txt
 
-      - name: Package app files
-        run: |
-          tar -czf output.tar.gz \
-            app/ \
-            data/ \
-            wheels/ \
-            requirements.txt \
-            requirements-cpp.txt \
-            startup.sh
+      - name: Make startup script executable
+        run: chmod +x startup.sh
 
-      - name: Upload artifacts
+      - name: Upload app artifacts
         uses: actions/upload-artifact@v4
         with:
           name: python-app
-          path: output.tar.gz
+          path: |
+            app/
+            data/
+            wheels/
+            requirements.txt
+            requirements-cpp.txt
+            startup.sh
 
   deploy:
     runs-on: ubuntu-latest
     needs: build
     steps:
-      - name: Download packaged app
+      - name: Download app package
         uses: actions/download-artifact@v4
         with:
           name: python-app
-          path: .
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Extract artifacts
-        run: |
-          mkdir extracted
-          tar -xzf output.tar.gz -C extracted
-          chmod +x extracted/startup.sh
+          path: extracted/
 
       - name: Login to Azure
         uses: azure/login@v2
@@ -103,5 +91,5 @@ jobs:
           package: extracted
           startup-command: "bash /home/site/wwwroot/startup.sh"
 
-      - name: Ensure startup.sh is executable
-        run: chmod +x extracted/startup.sh
+      - name: Verify deployed structure
+        run: ls -R extracted
