@@ -102,3 +102,6 @@ jobs:
           slot-name: 'Production'
           package: extracted
           startup-command: "bash /home/site/wwwroot/startup.sh"
+
+      - name: Ensure startup.sh is executable
+        run: chmod +x extracted/startup.sh
