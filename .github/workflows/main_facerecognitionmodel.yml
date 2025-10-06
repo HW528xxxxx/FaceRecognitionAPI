@@ -13,8 +13,6 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-    outputs:
-      wheels-path: ${{ steps.upload-wheels.outputs.path }}
     steps:
       - uses: actions/checkout@v4
 
@@ -22,15 +20,11 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            build-essential \
-            cmake \
-            g++ \
-            libopenblas-dev \
-            liblapack-dev \
-            libboost-all-dev \
-            python3-dev \
-            python3-pip \
-            python3-venv
+            build-essential cmake g++ \
+            libopenblas-dev liblapack-dev \
+            libboost-all-dev python3-dev \
+            python3-pip python3-venv
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -40,37 +34,34 @@ jobs:
         run: |
           python -m venv venv
           source venv/bin/activate
+
       - name: Install build tools
         run: |
           source venv/bin/activate
           pip install --upgrade pip setuptools wheel
+
       - name: Build dlib & face_recognition wheels
         run: |
           source venv/bin/activate
           mkdir wheels
           pip wheel -r requirements-cpp.txt -w wheels
+
       - name: Install other dependencies
         run: |
           source venv/bin/activate
           pip install --find-links=wheels -r requirements.txt
-      # 🔹 壓縮應用程式（建立 output.tar.gz）
+
       - name: Package app files
         run: |
-          echo "🔹 建立 output.tar.gz ..."
           tar -czf output.tar.gz \
             app/ \
             data/ \
-            startup.sh \
+            wheels/ \
             requirements.txt \
             requirements-cpp.txt \
-            wheels/
-      - name: Upload wheels
-        uses: actions/upload-artifact@v4
-        with:
-          name: python-wheels
-          path: wheels/
+            startup.sh
 
-      - name: Upload packaged app
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: python-app
@@ -86,59 +77,23 @@ jobs:
           name: python-app
           path: .
 
-      - name: Download wheels
-        uses: actions/download-artifact@v4
-        with:
-          name: python-wheels
-          path: wheels_zip/
-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      # ✅ 正確解壓縮 + 檢查 startup.sh
       - name: Extract artifacts
         run: |
-          echo "🔹 檢查當前目錄 ..."
-          ls -la
-          echo "🔹 確認 output.tar.gz 是否存在 ..."
-          if [ ! -f output.tar.gz ]; then
-            echo "❌ 沒找到 output.tar.gz！"
-            exit 1
-          fi
-          echo "🔹 解壓 output.tar.gz ..."
           mkdir extracted
           tar -xzf output.tar.gz -C extracted
-          cd extracted
-          echo "🔹 檢查 wheels 是否存在 ..."
-          if [ ! -d "wheels" ]; then
-            echo "⚠️ 沒找到 wheels，從 wheels_zip 複製 ..."
-            mkdir wheels
-            cp ../wheels_zip/*.whl wheels/ || true
-          fi
-          echo "✅ wheels 內容如下："
-          ls -la wheels
-          echo "🔹 檢查 startup.sh ..."
-          ls -la
-          if [ ! -f startup.sh ]; then
-            echo "❌ 沒找到 startup.sh！"
-            exit 1
-          fi
-          chmod +x startup.sh
-      # ✅ 安裝所有相依套件（包含 face_recognition）
-      - name: Install dependencies from wheels
-        working-directory: extracted
-        run: |
-          pip install --upgrade pip
-          pip install --no-index --find-links=wheels -r requirements-cpp.txt
-          pip install -r requirements.txt
+          chmod +x extracted/startup.sh
+
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_844EBF23D10F47F8A42E54F966D7658B }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_7BA43BB2AF364AEB89D5D517A2D9E03D }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_696B238220A24479BEACBB539858D6B6 }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID }}
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
@@ -147,6 +102,3 @@ jobs:
           slot-name: 'Production'
           package: extracted
           startup-command: "bash /home/site/wwwroot/startup.sh"
-
-      - name: Debug check files
-        run: ls -R extracted
